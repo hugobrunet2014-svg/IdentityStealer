@@ -8,7 +8,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.SkullMeta;
@@ -22,22 +21,17 @@ public class SkinListener implements Listener {
 
     public SkinListener(JavaPlugin plugin) {
         this.plugin = plugin;
-        // On se connecte à l'API de SkinsRestorer
-        this.skinsRestorer = SkinsRestorerProvider.getApi();
+        // Nouvelle méthode pour récupérer l'API
+        this.skinsRestorer = SkinsRestorerProvider.get();
     }
 
-    // Détecte quand on clique dans l'inventaire pour mettre/enlever le casque
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
         if (!(event.getWhoClicked() instanceof Player)) return;
-        Player player = (event.getWhoClicked() instanceof Player) ? (Player) event.getWhoClicked() : null;
-        if (player == null) return;
-
-        // On attend la fin du clic pour checker l'armure
+        Player player = (Player) event.getWhoClicked();
         Bukkit.getScheduler().runTaskLater(plugin, () -> checkArmor(player), 1L);
     }
 
-    // Détecte quand on fait un clic droit avec la tête en main pour l'équiper
     @EventHandler
     public void onPlayerInteract(PlayerInteractEvent event) {
         Player player = event.getPlayer();
@@ -54,15 +48,12 @@ public class SkinListener implements Listener {
 
         if (helmet != null && helmet.getType() == Material.PLAYER_HEAD) {
             SkullMeta meta = (SkullMeta) helmet.getItemMeta();
-            
             if (meta != null && meta.getOwningPlayer() != null) {
                 String targetSkinName = meta.getOwningPlayer().getName();
-                
                 if (targetSkinName != null) {
                     try {
-                        // On applique le skin de la victime via SkinsRestorer
-                        playerStorage.setSkinOfPlayer(player.getUniqueId(), targetSkinName);
-                        // On force la mise à jour visuelle pour tout le monde
+                        // Nouvelles méthodes de l'API moderne de SkinsRestorer
+                        playerStorage.setSkin(player.getUniqueId(), targetSkinName);
                         skinsRestorer.getSkinApplier(Player.class).applySkin(player);
                     } catch (Exception e) {
                         plugin.getLogger().warning("Impossible d'appliquer le skin pour " + player.getName());
@@ -70,12 +61,12 @@ public class SkinListener implements Listener {
                 }
             }
         } else {
-            // Si le joueur n'a plus de tête de joueur sur lui, on remet son skin d'origine
             try {
-                playerStorage.removeSkinOfPlayer(player.getUniqueId());
+                // Nouvelle méthode pour retirer le skin
+                playerStorage.removeSkin(player.getUniqueId());
                 skinsRestorer.getSkinApplier(Player.class).applySkin(player);
             } catch (Exception e) {
-                // Pas de skin personnalisé actif, rien à enlever
+                // Rien à enlever
             }
         }
     }
