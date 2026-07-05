@@ -6,11 +6,16 @@ public class IdentityStealer extends JavaPlugin {
 
     @Override
     public void onEnable() {
-        getLogger().info("IdentityStealer ON");
+        // Enregistrement du Listener de Kill
+        getServer().getPluginManager().registerEvents(new PlayerKillListener(), this);
+        
+        getLogger().info("==========================================");
+        getLogger().info("IdentityStealer v1.0 par Hugo - ACTIVE");
+        getLogger().info("==========================================");
     }
 
     @Override
     public void onDisable() {
-        getLogger().info("IdentityStealer OFF");
+        getLogger().info("IdentityStealer v1.0 - DESACTIVE");
     }
 }
