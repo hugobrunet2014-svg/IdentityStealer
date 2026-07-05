@@ -1,0 +1,5 @@
+name: IdentityStealer
+version: 1.0
+main: fr.hugo.identitystealer.IdentityStealer
+api-version: 1.21
+author: Hugo
