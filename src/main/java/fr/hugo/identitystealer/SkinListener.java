@@ -2,7 +2,7 @@ package fr.hugo.identitystealer;
 
 import net.skinsrestorer.api.SkinsRestorer;
 import net.skinsrestorer.api.SkinsRestorerProvider;
-import net.skinsrestorer.api.storage.PlayerStorage;
+import net.skinsrestorer.api.property.SkinProperty;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -14,6 +14,8 @@ import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.Bukkit;
 
+import java.util.Optional;
+
 public class SkinListener implements Listener {
 
     private final JavaPlugin plugin;
@@ -21,7 +23,6 @@ public class SkinListener implements Listener {
 
     public SkinListener(JavaPlugin plugin) {
         this.plugin = plugin;
-        // Nouvelle méthode pour récupérer l'API
         this.skinsRestorer = SkinsRestorerProvider.get();
     }
 
@@ -44,7 +45,6 @@ public class SkinListener implements Listener {
 
     private void checkArmor(Player player) {
         ItemStack helmet = player.getInventory().getHelmet();
-        PlayerStorage playerStorage = skinsRestorer.getPlayerStorage();
 
         if (helmet != null && helmet.getType() == Material.PLAYER_HEAD) {
             SkullMeta meta = (SkullMeta) helmet.getItemMeta();
@@ -52,9 +52,12 @@ public class SkinListener implements Listener {
                 String targetSkinName = meta.getOwningPlayer().getName();
                 if (targetSkinName != null) {
                     try {
-                        // Nouvelles méthodes de l'API moderne de SkinsRestorer
-                        playerStorage.setSkin(player.getUniqueId(), targetSkinName);
-                        skinsRestorer.getSkinApplier(Player.class).applySkin(player);
+                        // Méthode sûre : On récupère le skin par le nom via le PropertyUtils
+                        Optional<SkinProperty> skin = skinsRestorer.getPropertyUtils().getSkinProperty(targetSkinName);
+                        if (skin.isPresent()) {
+                            skinsRestorer.getPlayerStorage().setSkinIdOfPlayer(player.getUniqueId(), skin.get().getSkinId());
+                            skinsRestorer.getSkinApplier(Player.class).applySkin(player);
+                        }
                     } catch (Exception e) {
                         plugin.getLogger().warning("Impossible d'appliquer le skin pour " + player.getName());
                     }
@@ -62,11 +65,11 @@ public class SkinListener implements Listener {
             }
         } else {
             try {
-                // Nouvelle méthode pour retirer le skin
-                playerStorage.removeSkin(player.getUniqueId());
+                // Méthode sûre pour reset le skin du joueur
+                skinsRestorer.getPlayerStorage().removeSkinIdOfPlayer(player.getUniqueId());
                 skinsRestorer.getSkinApplier(Player.class).applySkin(player);
             } catch (Exception e) {
-                // Rien à enlever
+                // Rien à reset
             }
         }
     }
