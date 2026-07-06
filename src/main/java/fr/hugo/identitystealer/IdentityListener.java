@@ -67,10 +67,8 @@ public class IdentityListener implements Listener {
         Player player = event.getPlayer();
         if (activeDisguises.containsKey(player.getUniqueId())) {
             String fakeName = activeDisguises.get(player.getUniqueId());
-            
             String currentFormat = event.getFormat();
             event.setFormat(currentFormat.replace(player.getName(), fakeName));
-            
             player.setDisplayName(fakeName);
         }
     }
@@ -80,80 +78,42 @@ public class IdentityListener implements Listener {
 
         if (helmet != null && helmet.getType() == Material.PLAYER_HEAD) {
             SkullMeta meta = (SkullMeta) helmet.getItemMeta();
-            if (meta != null) {
-                
-                String targetSkinName = null;
-                if (meta.getOwningPlayer() != null) {
-                    targetSkinName = meta.getOwningPlayer().getName();
-                }
-
-                if (targetSkinName != null && !targetSkinName.isEmpty()) {
-                    
-                    if (targetSkinName.equals(activeDisguises.get(player.getUniqueId()))) {
-                        return;
-                    }
-
-                    activeDisguises.put(player.getUniqueId(), targetSkinName);
-                    
-                    player.performCommand("skin set " + targetSkinName);
-                    
-                    player.setDisplayName(targetSkinName);
-                    player.setPlayerListName(targetSkinName);
-                    
-                    updatePlayerNameTag(player, targetSkinName);
-                    
-                    player.sendMessage("§a🎭 Tu as volé l'identité de " + targetSkinName + " ! Enlève la tête pour reprendre la tienne.");
+            if (meta != null && meta.getOwningPlayer() != null) {
+                String targetName = meta.getOwningPlayer().getName();
+                if (targetName != null && !targetName.equals(activeDisguises.get(player.getUniqueId()))) {
+                    activeDisguises.put(player.getUniqueId(), targetName);
+                    player.performCommand("skin set " + targetName);
+                    player.setDisplayName(targetName);
+                    player.setPlayerListName(targetName);
+                    updatePlayerNameTag(player, targetName);
+                    player.sendMessage("§a🎭 Identité volée : " + targetName);
                 }
             }
-        } else {
-            if (activeDisguises.containsKey(player.getUniqueId())) {
-                
-                player.performCommand("skin clear");
-                
-                player.setDisplayName(player.getName());
-                player.setPlayerListName(player.getName());
-                
-                removePlayerFromNameTag(player);
-                
-                activeDisguises.remove(player.getUniqueId());
-                
-                for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-                    onlinePlayer.sendEquipmentChange(player, EquipmentSlot.HEAD, player.getInventory().getHelmet() != null ? player.getInventory().getHelmet() : new ItemStack(Material.AIR));
-                }
-                
-                player.sendMessage("§e🎭 Tu as repris ton identité d'origine.");
-            }
+        } else if (activeDisguises.containsKey(player.getUniqueId())) {
+            player.performCommand("skin clear");
+            player.setDisplayName(player.getName());
+            player.setPlayerListName(player.getName());
+            removePlayerFromNameTag(player);
+            activeDisguises.remove(player.getUniqueId());
+            player.sendMessage("§e🎭 Identité rendue.");
         }
     }
 
     private void updatePlayerNameTag(Player player, String fakeName) {
-        Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
-        String teamName = "ids_" + player.getName();
-        
-        Team team = scoreboard.getTeam(teamName);
-        if (team == null) {
-            team = scoreboard.registerNewTeam(teamName);
-        }
-        
-        team.setPrefix(fakeName + " §r");
+        Scoreboard board = Bukkit.getScoreboardManager().getMainScoreboard();
+        Team team = board.getTeam("id_" + player.getName());
+        if (team == null) team = board.registerNewTeam("id_" + player.getName());
+        team.setPrefix(fakeName + " ");
         team.setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.HIDE_FOR_OTHER_TEAMS);
-        
+        team.addEntry(player.getName());
         player.setCustomName(fakeName);
         player.setCustomNameVisible(true);
-
-        if (!team.hasEntry(player.getName())) {
-            team.addEntry(player.getName());
-        }
     }
 
     private void removePlayerFromNameTag(Player player) {
-        Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
-        String teamName = "ids_" + player.getName();
-        Team team = scoreboard.getTeam(teamName);
-        if (team != null) {
-            team.removeEntry(player.getName());
-            team.unregister();
-        }
+        Scoreboard board = Bukkit.getScoreboardManager().getMainScoreboard();
+        Team team = board.getTeam("id_" + player.getName());
+        if (team != null) team.unregister();
         player.setCustomName(null);
         player.setCustomNameVisible(false);
     }
