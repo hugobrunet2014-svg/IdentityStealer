@@ -79,7 +79,7 @@ public class IdentityListener implements Listener {
                     // 1. Skin
                     Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "skinsrestorer set " + player.getName() + " " + targetSkinName);
 
-                    // 2. Plugin TAB (Nametag + Liste) via commandes console
+                    // 2. Commande forcée pour le plugin TAB
                     Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "tab player " + player.getName() + " customtabname " + targetSkinName);
                     Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "tab player " + player.getName() + " customtagname " + targetSkinName);
 
