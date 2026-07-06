@@ -15,6 +15,9 @@ import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.Bukkit;
 
+import me.neznamy.tab.api.TabAPI;
+import me.neznamy.tab.api.TabPlayer;
+
 import java.util.HashMap;
 import java.util.UUID;
 
@@ -55,7 +58,6 @@ public class IdentityListener implements Listener {
     public void onPlayerMove(PlayerMoveEvent event) {
         Player player = event.getPlayer();
         if (activeDisguises.containsKey(player.getUniqueId())) {
-            // On renvoie l'invisibilité du casque de façon légère
             for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
                 onlinePlayer.sendEquipmentChange(player, EquipmentSlot.HEAD, new ItemStack(Material.AIR));
             }
@@ -78,15 +80,24 @@ public class IdentityListener implements Listener {
 
                     activeDisguises.put(player.getUniqueId(), targetSkinName);
                     
-                    // On demande à la console de mettre le skin (évite les conflits)
+                    // 1. Skin
                     Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "skinsrestorer set " + player.getName() + " " + targetSkinName);
 
-                    // Application des noms de base Spigot/Paper
-                    player.setPlayerListName(targetSkinName);
-                    player.setDisplayName(targetSkinName);
-                    player.setCustomName(targetSkinName);
-                    player.setCustomNameVisible(true);
-                    
+                    // 2. Forçage via le plugin TAB (Nametag + Liste du TAB)
+                    try {
+                        TabPlayer tabPlayer = TabAPI.getInstance().getPlayer(player.getUniqueId());
+                        if (tabPlayer != null) {
+                            // On force la valeur personnalisée dans le plugin TAB
+                            TabAPI.getInstance().getNameTagManager().setPrefix(tabPlayer, "");
+                            TabAPI.getInstance().getNameTagManager().setSuffix(tabPlayer, "");
+                            player.setPlayerListName(targetSkinName);
+                            player.setDisplayName(targetSkinName);
+                        }
+                    } catch (Exception e) {
+                        // Sécurité si l'API de TAB a un souci
+                        player.setPlayerListName(targetSkinName);
+                    }
+
                     player.sendMessage("§a🎭 Tu as volé l'identité de " + targetSkinName + " ! Enlève la tête pour redevenir toi-même.");
                 }
             }
@@ -96,14 +107,21 @@ public class IdentityListener implements Listener {
             if (activeDisguises.containsKey(player.getUniqueId())) {
                 Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "skinsrestorer clear " + player.getName());
                 
+                // Reset via le plugin TAB
+                try {
+                    TabPlayer tabPlayer = TabAPI.getInstance().getPlayer(player.getUniqueId());
+                    if (tabPlayer != null) {
+                        TabAPI.getInstance().getNameTagManager().resetProperties(tabPlayer);
+                    }
+                } catch (Exception e) {
+                    // Ignorer
+                }
+
                 player.setPlayerListName(player.getName());
                 player.setDisplayName(player.getName());
-                player.setCustomName(null);
-                player.setCustomNameVisible(false);
                 
                 activeDisguises.remove(player.getUniqueId());
                 
-                // Remet le casque visible normalement s'il remet un vrai chapeau
                 for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
                     onlinePlayer.sendEquipmentChange(player, EquipmentSlot.HEAD, player.getInventory().getHelmet() != null ? player.getInventory().getHelmet() : new ItemStack(Material.AIR));
                 }
