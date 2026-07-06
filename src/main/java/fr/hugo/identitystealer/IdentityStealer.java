@@ -6,7 +6,7 @@ public class IdentityStealer extends JavaPlugin {
 
     @Override
     public void onEnable() {
-        // Enregistrement de nos détecteurs actifs
+        // On n'enregistre QUE les deux listeners qui existent vraiment
         getServer().getPluginManager().registerEvents(new PlayerKillListener(), this);
         getServer().getPluginManager().registerEvents(new IdentityListener(this), this);
 
