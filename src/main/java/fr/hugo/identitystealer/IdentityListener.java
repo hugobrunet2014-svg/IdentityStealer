@@ -4,6 +4,7 @@ import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
@@ -11,6 +12,8 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.Bukkit;
+import org.bukkit.scoreboard.Scoreboard;
+import org.bukkit.scoreboard.Team;
 
 import java.util.HashMap;
 import java.util.UUID;
@@ -22,6 +25,19 @@ public class IdentityListener implements Listener {
 
     public IdentityListener(JavaPlugin plugin) {
         this.plugin = plugin;
+    }
+
+    // NOUVEAU : On gère le drop de la tête à la mort
+    @EventHandler
+    public void onPlayerDeath(PlayerDeathEvent event) {
+        Player victim = event.getEntity();
+        ItemStack head = new ItemStack(Material.PLAYER_HEAD);
+        SkullMeta meta = (SkullMeta) head.getItemMeta();
+        if (meta != null) {
+            meta.setOwningPlayer(victim);
+            head.setItemMeta(meta);
+            event.getDrops().add(head);
+        }
     }
 
     @EventHandler
@@ -62,6 +78,7 @@ public class IdentityListener implements Listener {
                     player.performCommand("skin set " + targetName);
                     player.setDisplayName(targetName);
                     player.setPlayerListName(targetName);
+                    updateNameTag(player, targetName);
                     player.sendMessage("§a🎭 Identité volée : " + targetName);
                 }
             }
@@ -69,8 +86,27 @@ public class IdentityListener implements Listener {
             player.performCommand("skin clear");
             player.setDisplayName(player.getName());
             player.setPlayerListName(player.getName());
+            resetNameTag(player);
             activeDisguises.remove(player.getUniqueId());
             player.sendMessage("§e🎭 Identité rendue.");
         }
+    }
+
+    private void updateNameTag(Player player, String fakeName) {
+        Scoreboard board = Bukkit.getScoreboardManager().getMainScoreboard();
+        Team team = board.getTeam("id_" + player.getName());
+        if (team == null) team = board.registerNewTeam("id_" + player.getName());
+        team.setPrefix(fakeName + " §r");
+        team.addEntry(player.getName());
+        player.setCustomName(fakeName);
+        player.setCustomNameVisible(true);
+    }
+
+    private void resetNameTag(Player player) {
+        Scoreboard board = Bukkit.getScoreboardManager().getMainScoreboard();
+        Team team = board.getTeam("id_" + player.getName());
+        if (team != null) team.unregister();
+        player.setCustomName(null);
+        player.setCustomNameVisible(false);
     }
 }
