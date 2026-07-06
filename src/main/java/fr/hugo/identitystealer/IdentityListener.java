@@ -5,6 +5,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
@@ -19,7 +20,6 @@ import java.util.UUID;
 public class IdentityListener implements Listener {
 
     private final JavaPlugin plugin;
-    // Garde en mémoire qui est déguisé sous quel nom
     private final HashMap<UUID, String> activeDisguises = new HashMap<>();
 
     public IdentityListener(JavaPlugin plugin) {
@@ -30,8 +30,17 @@ public class IdentityListener implements Listener {
     public void onInventoryClick(InventoryClickEvent event) {
         if (!(event.getWhoClicked() instanceof Player)) return;
         Player player = (Player) event.getWhoClicked();
-        // On attend 1 tick que l'item se place pour vérifier le casque
-        Bukkit.getScheduler().runTaskLater(plugin, () -> checkHelmet(player), 1L);
+
+        // Sécurité : On n'agit QUE si le joueur interagit avec l'emplacement du casque (slot 39)
+        // OU s'il clique/déplace une tête de joueur.
+        boolean isHelmetSlot = event.getSlot() == 39;
+        boolean isCurrentItemHead = event.getCurrentItem() != null && event.getCurrentItem().getType() == Material.PLAYER_HEAD;
+        boolean isCursorItemHead = event.getCursor() != null && event.getCursor().getType() == Material.PLAYER_HEAD;
+
+        if (isHelmetSlot || isCurrentItemHead || isCursorItemHead) {
+            // On attend 1 tick que l'action se termine dans l'inventaire avant de vérifier le casque
+            Bukkit.getScheduler().runTaskLater(plugin, () -> checkHelmet(player), 1L);
+        }
     }
 
     @EventHandler
@@ -39,7 +48,7 @@ public class IdentityListener implements Listener {
         Player player = event.getPlayer();
         ItemStack item = event.getItem();
         
-        // Bloque l'action si c'est un clic droit rapide avec une tête pour éviter les bugs
+        // Clic droit rapide avec une tête dans la barre d'inventaire
         if (item != null && item.getType() == Material.PLAYER_HEAD) {
             Bukkit.getScheduler().runTaskLater(plugin, () -> checkHelmet(player), 1L);
         }
@@ -54,19 +63,18 @@ public class IdentityListener implements Listener {
                 String targetSkinName = meta.getOwningPlayer().getName();
                 if (targetSkinName != null) {
                     
-                    // 1. On enregistre son faux nom
                     activeDisguises.put(player.getUniqueId(), targetSkinName);
                     
-                    // 2. C'est la CONSOLE qui exécute la commande (plus de fermeture d'inventaire !)
+                    // La console gère le skin en tâche de fond
                     Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "skinsrestorer set " + player.getName() + " " + targetSkinName);
 
-                    // 3. On change son identité (TAB et au-dessus de la tête)
+                    // Changement d'identité complet
                     player.customName(Component.text(targetSkinName));
                     player.setCustomNameVisible(true);
                     player.playerListName(Component.text(targetSkinName));
                     player.displayName(Component.text(targetSkinName));
 
-                    // 4. ASTUCE de la grosse tête : On lui retire le casque visuel pour ne pas gâcher le skin !
+                    // On retire la grosse tête moche pour laisser le skin respirer !
                     player.getInventory().setHelmet(null);
                     player.sendMessage("§a🎭 Tu as volé l'identité de " + targetSkinName + " ! Tape /unmask pour reprendre ton apparence.");
                 }
@@ -74,7 +82,6 @@ public class IdentityListener implements Listener {
         }
     }
 
-    // Commande manuelle pour enlever le masque puisque la tête n'est plus sur le casque !
     @EventHandler
     public void onCommand(PlayerCommandPreprocessEvent event) {
         Player player = event.getPlayer();
@@ -82,10 +89,8 @@ public class IdentityListener implements Listener {
             event.setCancelled(true);
             if (activeDisguises.containsKey(player.getUniqueId())) {
                 
-                // Reset du skin via la console
                 Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "skinsrestorer clear " + player.getName());
                 
-                // Reset de l'identité
                 player.customName(null);
                 player.setCustomNameVisible(false);
                 player.playerListName(null);
@@ -103,7 +108,6 @@ public class IdentityListener implements Listener {
     @EventHandler
     public void onPlayerChat(AsyncPlayerChatEvent event) {
         Player player = event.getPlayer();
-        // Si le joueur est enregistré dans nos déguisements actifs, on modifie son nom dans le chat
         if (activeDisguises.containsKey(player.getUniqueId())) {
             String fakeName = activeDisguises.get(player.getUniqueId());
             event.setFormat("<" + fakeName + "> %2$s");
