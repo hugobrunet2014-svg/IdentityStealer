@@ -27,7 +27,6 @@ public class IdentityListener implements Listener {
         this.plugin = plugin;
     }
 
-    // NOUVEAU : On gère le drop de la tête à la mort
     @EventHandler
     public void onPlayerDeath(PlayerDeathEvent event) {
         Player victim = event.getEntity();
