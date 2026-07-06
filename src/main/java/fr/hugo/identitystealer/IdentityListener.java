@@ -11,7 +11,6 @@ import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.meta.SkullMeta;
-import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.Bukkit;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
@@ -21,10 +20,11 @@ import java.util.UUID;
 
 public class IdentityListener implements Listener {
 
-    private final JavaPlugin plugin;
+    // On utilise la classe précise de ton plugin pour éviter l'erreur de compilation Paper
+    private final IdentityStealer plugin;
     private final HashMap<UUID, String> activeDisguises = new HashMap<>();
 
-    public IdentityListener(JavaPlugin plugin) {
+    public IdentityListener(IdentityStealer plugin) {
         this.plugin = plugin;
     }
 
@@ -62,18 +62,15 @@ public class IdentityListener implements Listener {
         }
     }
 
-    // 💬 CHAT BLINDÉ : Force le pseudo de la tête à 100% dans le chat
     @EventHandler
     public void onPlayerChat(AsyncPlayerChatEvent event) {
         Player player = event.getPlayer();
         if (activeDisguises.containsKey(player.getUniqueId())) {
             String fakeName = activeDisguises.get(player.getUniqueId());
             
-            // Étape 1 : On remplace dans le format global (essentiel pour la majorité des serveurs)
             String currentFormat = event.getFormat();
             event.setFormat(currentFormat.replace(player.getName(), fakeName));
             
-            // Étape 2 : On change aussi le nom d'affichage au cas où le système de chat utilise le DisplayName
             player.setDisplayName(fakeName);
         }
     }
@@ -98,14 +95,11 @@ public class IdentityListener implements Listener {
 
                     activeDisguises.put(player.getUniqueId(), targetSkinName);
                     
-                    // Applique le skin via SkinsRestorer
                     player.performCommand("skin set " + targetSkinName);
                     
-                    // Modifie le nom pour le chat (DisplayName) et la liste de joueur (TAB)
                     player.setDisplayName(targetSkinName);
                     player.setPlayerListName(targetSkinName);
                     
-                    // Modifie le nom au-dessus de la tête (Nettoyage de l'ancien pseudo)
                     updatePlayerNameTag(player, targetSkinName);
                     
                     refreshPlayerForOthers(player);
@@ -118,7 +112,6 @@ public class IdentityListener implements Listener {
                 
                 player.performCommand("skin clear");
                 
-                // Remet le vrai nom partout
                 player.setDisplayName(player.getName());
                 player.setPlayerListName(player.getName());
                 
@@ -137,7 +130,6 @@ public class IdentityListener implements Listener {
         }
     }
 
-    // Gère le nom au-dessus de la tête en créant une équipe propre sans ton vrai pseudo accolé
     private void updatePlayerNameTag(Player player, String fakeName) {
         Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
         String teamName = "ids_" + player.getName();
@@ -147,11 +139,9 @@ public class IdentityListener implements Listener {
             team = scoreboard.registerNewTeam(teamName);
         }
         
-        // On met le faux pseudo en préfixe et on cache le vrai nom en changeant sa visibilité
         team.setPrefix(fakeName + " §r");
         team.setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.HIDE_FOR_OTHER_TEAMS);
         
-        // Pour les versions récentes de Paper, on force l'affichage du préfixe comme seul nom
         player.setCustomName(fakeName);
         player.setCustomNameVisible(true);
 
