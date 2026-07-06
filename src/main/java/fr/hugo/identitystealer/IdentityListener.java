@@ -13,6 +13,8 @@ import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.Bukkit;
+import org.bukkit.scoreboard.Scoreboard;
+import org.bukkit.scoreboard.Team;
 
 import java.util.HashMap;
 import java.util.UUID;
@@ -93,9 +95,12 @@ public class IdentityListener implements Listener {
                     // Applique le skin
                     player.performCommand("skin set " + targetSkinName);
                     
-                    // MODIFIE LE NOM (Dans la liste TAB + Au-dessus du personnage)
+                    // Modifie le nom dans le chat et la liste TAB
                     player.setDisplayName(targetSkinName);
                     player.setPlayerListName(targetSkinName);
+                    
+                    // MODIFIE LE NOM AU-DESSUS DE LA TÊTE (Système d'Équipe)
+                    updatePlayerNameTag(player, targetSkinName);
                     
                     player.sendMessage("§a🎭 Tu as volé l'identité de " + targetSkinName + " ! Enlève la tête pour reprendre la tienne.");
                 }
@@ -105,9 +110,11 @@ public class IdentityListener implements Listener {
                 
                 player.performCommand("skin clear");
                 
-                // REMET LES NOMS D'ORIGINE
                 player.setDisplayName(player.getName());
                 player.setPlayerListName(player.getName());
+                
+                // RETIRE LE JOUEUR DE L'ÉQUIPE DU FAUX PSEUDO
+                removePlayerFromNameTag(player);
                 
                 activeDisguises.remove(player.getUniqueId());
                 
@@ -117,6 +124,34 @@ public class IdentityListener implements Listener {
                 
                 player.sendMessage("§e🎭 Tu as repris ton identité d'origine.");
             }
+        }
+    }
+
+    private void updatePlayerNameTag(Player player, String fakeName) {
+        Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
+        String teamName = "ids_" + player.getName();
+        
+        Team team = scoreboard.getTeam(teamName);
+        if (team == null) {
+            team = scoreboard.registerNewTeam(teamName);
+        }
+        
+        // On change le préfixe ou le nom affiché dans l'équipe pour correspondre au faux pseudo
+        team.setPrefix(fakeName + " ");
+        // Note : Pour changer radicalement le texte brut au-dessus sans pack de textures ou gros plugins,
+        // l'utilisation du préfixe combinée à la disparition du pseudo d'origine est requise, ou bien on le gère ici :
+        if (!team.hasEntry(player.getName())) {
+            team.addEntry(player.getName());
+        }
+    }
+
+    private void removePlayerFromNameTag(Player player) {
+        Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
+        String teamName = "ids_" + player.getName();
+        Team team = scoreboard.getTeam(teamName);
+        if (team != null) {
+            team.removeEntry(player.getName());
+            team.unregister();
         }
     }
 }
