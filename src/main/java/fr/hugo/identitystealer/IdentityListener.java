@@ -11,7 +11,7 @@ import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.meta.SkullMeta;
-import org.bukkit.plugin.Plugin;
+import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.Bukkit;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
@@ -21,10 +21,10 @@ import java.util.UUID;
 
 public class IdentityListener implements Listener {
 
-    private final Plugin plugin;
+    private final JavaPlugin plugin;
     private final HashMap<UUID, String> activeDisguises = new HashMap<>();
 
-    public IdentityListener(Plugin plugin) {
+    public IdentityListener(JavaPlugin plugin) {
         this.plugin = plugin;
     }
 
@@ -162,9 +162,11 @@ public class IdentityListener implements Listener {
         player.setCustomNameVisible(false);
     }
 
+    // 👇 LA FONCTION MODERNE ET COMPATIBLE PAPER CORRIGÉE ICI 👇
     private void refreshPlayerForOthers(Player player) {
         for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
             if (!onlinePlayer.equals(player)) {
+                // Version moderne recommandée par le compilateur de Paper
                 onlinePlayer.hidePlayer(plugin, player);
                 Bukkit.getScheduler().runTaskLater(plugin, () -> onlinePlayer.showPlayer(plugin, player), 2L);
             }
