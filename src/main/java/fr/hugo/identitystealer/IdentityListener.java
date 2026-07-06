@@ -162,11 +162,12 @@ public class IdentityListener implements Listener {
         player.setCustomNameVisible(false);
     }
 
+    // 👇 LA FONCTION CORRIGÉE SANS LE DEUXIÈME ARGUMENT INTERDIT 👇
     private void refreshPlayerForOthers(Player player) {
         for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
             if (!onlinePlayer.equals(player)) {
-                onlinePlayer.hidePlayer(plugin, player);
-                Bukkit.getScheduler().runTaskLater(plugin, () -> onlinePlayer.showPlayer(plugin, player), 2L);
+                onlinePlayer.hidePlayer(player);
+                Bukkit.getScheduler().runTaskLater(plugin, () -> onlinePlayer.showPlayer(player), 2L);
             }
         }
     }
