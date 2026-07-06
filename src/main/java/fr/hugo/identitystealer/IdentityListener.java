@@ -79,10 +79,8 @@ public class IdentityListener implements Listener {
 
                     activeDisguises.put(player.getUniqueId(), targetSkinName);
                     
-                    // On envoie toutes les syntaxes possibles à la console
-                    Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "skin set " + player.getName() + " " + targetSkinName);
-                    Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "skinsrestorer set " + player.getName() + " " + targetSkinName);
-                    Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "sr set " + player.getName() + " " + targetSkinName);
+                    // ICI : Le joueur exécute exactement TA commande fonctionnelle
+                    player.performCommand("skin set " + targetSkinName);
                     
                     player.sendMessage("§a🎭 Tu as volé le skin de " + targetSkinName + " ! Enlève la tête pour reprendre le tien.");
                 }
@@ -90,10 +88,8 @@ public class IdentityListener implements Listener {
         } else {
             if (activeDisguises.containsKey(player.getUniqueId())) {
                 
-                // On nettoie avec toutes les syntaxes possibles
-                Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "skin clear " + player.getName());
-                Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "skinsrestorer clear " + player.getName());
-                Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "sr clear " + player.getName());
+                // Le joueur nettoie son propre skin
+                player.performCommand("skin clear");
                 
                 activeDisguises.remove(player.getUniqueId());
                 
