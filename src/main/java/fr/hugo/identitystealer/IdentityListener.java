@@ -55,7 +55,10 @@ public class IdentityListener implements Listener {
     public void onPlayerMove(PlayerMoveEvent event) {
         Player player = event.getPlayer();
         if (activeDisguises.containsKey(player.getUniqueId())) {
-            updateInvisibility(player);
+            // On renvoie l'invisibilité du casque de façon légère
+            for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
+                onlinePlayer.sendEquipmentChange(player, EquipmentSlot.HEAD, new ItemStack(Material.AIR));
+            }
         }
     }
 
@@ -70,25 +73,20 @@ public class IdentityListener implements Listener {
                 if (targetSkinName != null) {
                     
                     if (targetSkinName.equals(activeDisguises.get(player.getUniqueId()))) {
-                        updateInvisibility(player);
                         return;
                     }
 
                     activeDisguises.put(player.getUniqueId(), targetSkinName);
                     
-                    // 1. Applique le skin via la console
+                    // On demande à la console de mettre le skin (évite les conflits)
                     Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "skinsrestorer set " + player.getName() + " " + targetSkinName);
 
-                    // 2. Modifie l'affichage dans le TAB et le nom du profil
+                    // Application des noms de base Spigot/Paper
                     player.setPlayerListName(targetSkinName);
                     player.setDisplayName(targetSkinName);
                     player.setCustomName(targetSkinName);
                     player.setCustomNameVisible(true);
-
-                    // 3. Forcer le rafraîchissement complet du joueur pour les autres (Nametag inclus)
-                    refreshPlayer(player);
                     
-                    updateInvisibility(player);
                     player.sendMessage("§a🎭 Tu as volé l'identité de " + targetSkinName + " ! Enlève la tête pour redevenir toi-même.");
                 }
             }
@@ -105,31 +103,12 @@ public class IdentityListener implements Listener {
                 
                 activeDisguises.remove(player.getUniqueId());
                 
-                refreshPlayer(player);
-                
+                // Remet le casque visible normalement s'il remet un vrai chapeau
                 for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-                    onlinePlayer.sendEquipmentChange(player, EquipmentSlot.HEAD, new ItemStack(Material.AIR));
+                    onlinePlayer.sendEquipmentChange(player, EquipmentSlot.HEAD, player.getInventory().getHelmet() != null ? player.getInventory().getHelmet() : new ItemStack(Material.AIR));
                 }
                 
                 player.sendMessage("§e🎭 Tu as repris ton identité d'origine.");
-            }
-        }
-    }
-
-    private void updateInvisibility(Player player) {
-        for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-            onlinePlayer.sendEquipmentChange(player, EquipmentSlot.HEAD, new ItemStack(Material.AIR));
-        }
-    }
-
-    // Cache et réaffiche instantanément le joueur pour forcer Minecraft à charger son nouveau Nametag au-dessus de sa tête
-    private void refreshPlayer(Player player) {
-        for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-            if (!onlinePlayer.equals(player)) {
-                onlinePlayer.hidePlayer(plugin, player);
-                Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                    onlinePlayer.showPlayer(plugin, player);
-                }, 2L);
             }
         }
     }
