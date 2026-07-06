@@ -15,12 +15,14 @@ import org.bukkit.Bukkit;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
 
+// 👇 L'IMPORTATION MANQUANTE QUI FAISAIT PLANTER LE BUILD 👇
+import fr.hugo.identitystealer.IdentityStealer;
+
 import java.util.HashMap;
 import java.util.UUID;
 
 public class IdentityListener implements Listener {
 
-    // On utilise la classe précise de ton plugin pour éviter l'erreur de compilation Paper
     private final IdentityStealer plugin;
     private final HashMap<UUID, String> activeDisguises = new HashMap<>();
 
