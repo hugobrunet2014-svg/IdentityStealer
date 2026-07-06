@@ -5,7 +5,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
@@ -31,14 +30,11 @@ public class IdentityListener implements Listener {
         if (!(event.getWhoClicked() instanceof Player)) return;
         Player player = (Player) event.getWhoClicked();
 
-        // Sécurité : On n'agit QUE si le joueur interagit avec l'emplacement du casque (slot 39)
-        // OU s'il clique/déplace une tête de joueur.
         boolean isHelmetSlot = event.getSlot() == 39;
         boolean isCurrentItemHead = event.getCurrentItem() != null && event.getCurrentItem().getType() == Material.PLAYER_HEAD;
         boolean isCursorItemHead = event.getCursor() != null && event.getCursor().getType() == Material.PLAYER_HEAD;
 
         if (isHelmetSlot || isCurrentItemHead || isCursorItemHead) {
-            // On attend 1 tick que l'action se termine dans l'inventaire avant de vérifier le casque
             Bukkit.getScheduler().runTaskLater(plugin, () -> checkHelmet(player), 1L);
         }
     }
@@ -48,7 +44,6 @@ public class IdentityListener implements Listener {
         Player player = event.getPlayer();
         ItemStack item = event.getItem();
         
-        // Clic droit rapide avec une tête dans la barre d'inventaire
         if (item != null && item.getType() == Material.PLAYER_HEAD) {
             Bukkit.getScheduler().runTaskLater(plugin, () -> checkHelmet(player), 1L);
         }
@@ -65,17 +60,21 @@ public class IdentityListener implements Listener {
                     
                     activeDisguises.put(player.getUniqueId(), targetSkinName);
                     
-                    // La console gère le skin en tâche de fond
+                    // 1. La console applique le skin
                     Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "skinsrestorer set " + player.getName() + " " + targetSkinName);
 
-                    // Changement d'identité complet
+                    // 2. Changement d'identité complet (TAB, Chat, etc.)
                     player.customName(Component.text(targetSkinName));
                     player.setCustomNameVisible(true);
                     player.playerListName(Component.text(targetSkinName));
                     player.displayName(Component.text(targetSkinName));
 
-                    // On retire la grosse tête moche pour laisser le skin respirer !
-                    player.getInventory().setHelmet(null);
+                    // 3. On attend 5 ticks (un quart de seconde) pour laisser le skin s'afficher,
+                    // puis on retire la grosse tête de l'armure en toute sécurité !
+                    Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                        player.getInventory().setHelmet(null);
+                    }, 5L);
+
                     player.sendMessage("§a🎭 Tu as volé l'identité de " + targetSkinName + " ! Tape /unmask pour reprendre ton apparence.");
                 }
             }
