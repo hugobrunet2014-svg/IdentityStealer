@@ -6,6 +6,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.EquipmentSlot;
@@ -15,7 +16,6 @@ import org.bukkit.Bukkit;
 import net.kyori.adventure.text.Component;
 import java.util.HashMap;
 import java.util.UUID;
-import java.util.Collections;
 
 public class IdentityListener implements Listener {
 
@@ -50,6 +50,15 @@ public class IdentityListener implements Listener {
         }
     }
 
+    // Sécurité absolue : À chaque mouvement, si le joueur est déguisé, on force le masque invisible pour tout le monde
+    @EventHandler
+    public void onPlayerMove(PlayerMoveEvent event) {
+        Player player = event.getPlayer();
+        if (activeDisguises.containsKey(player.getUniqueId())) {
+            updateInvisibility(player);
+        }
+    }
+
     private void checkHelmet(Player player) {
         ItemStack helmet = player.getInventory().getHelmet();
 
@@ -60,7 +69,6 @@ public class IdentityListener implements Listener {
                 String targetSkinName = meta.getOwningPlayer().getName();
                 if (targetSkinName != null) {
                     
-                    // Si le déguisement est déjà actif pour ce nom, on ne refait pas les commandes en boucle
                     if (targetSkinName.equals(activeDisguises.get(player.getUniqueId()))) {
                         updateInvisibility(player);
                         return;
@@ -68,29 +76,26 @@ public class IdentityListener implements Listener {
 
                     activeDisguises.put(player.getUniqueId(), targetSkinName);
                     
-                    // Applique le skin via la commande exécutée par le JOUEUR (plus fiable pour l'affichage immédiat)
+                    // Applique le skin
                     player.performCommand("skin set " + targetSkinName);
 
-                    // Changement d'identité (TAB, au-dessus du corps)
+                    // Changement d'identité (TAB, Chat, etc.)
                     player.customName(Component.text(targetSkinName));
                     player.setCustomNameVisible(true);
                     player.playerListName(Component.text(targetSkinName));
                     player.displayName(Component.text(targetSkinName));
 
-                    // Rendre la tête invisible pour les autres joueurs
                     updateInvisibility(player);
                     
                     player.sendMessage("§a🎭 Tu as volé l'identité de " + targetSkinName + " ! Enlève la tête de ton inventaire pour redevenir toi-même.");
                 }
             }
         } 
-        // Cas 2 : Le joueur RETIRE la tête (ou son casque est vide)
+        // Cas 2 : Le joueur RETIRE la tête
         else {
             if (activeDisguises.containsKey(player.getUniqueId())) {
-                // On remet son skin d'origine
                 player.performCommand("skin clear");
                 
-                // Reset de l'identité
                 player.customName(null);
                 player.setCustomNameVisible(false);
                 player.playerListName(null);
@@ -98,27 +103,20 @@ public class IdentityListener implements Listener {
                 
                 activeDisguises.remove(player.getUniqueId());
                 
-                // On rafraîchit l'affichage pour tout le monde (le casque redevient visible si c'est un autre item)
+                // On remet à jour l'affichage normal pour tout le monde
                 for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-                    if (!onlinePlayer.equals(player)) {
-                        onlinePlayer.sendEquipmentChange(player, EquipmentSlot.HEAD, new ItemStack(Material.AIR));
-                    }
+                    onlinePlayer.sendEquipmentChange(player, EquipmentSlot.HEAD, new ItemStack(Material.AIR));
                 }
                 player.sendMessage("§e🎭 Tu as repris ton identité d'origine.");
             }
         }
     }
 
-    // Force les autres joueurs à voir de l'AIR à la place de la tête de joueur équipée
+    // Envoie en boucle le paquet "Pas de casque" pour contrer les mises à jour de Minecraft
     private void updateInvisibility(Player player) {
-        Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-                if (!onlinePlayer.equals(player)) {
-                    // On fait croire aux autres que le slot du casque est VIDE
-                    onlinePlayer.sendEquipmentChange(player, EquipmentSlot.HEAD, new ItemStack(Material.AIR));
-                }
-            }
-        }, 2L);
+        for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
+            onlinePlayer.sendEquipmentChange(player, EquipmentSlot.HEAD, new ItemStack(Material.AIR));
+        }
     }
 
     @SuppressWarnings("deprecation")
