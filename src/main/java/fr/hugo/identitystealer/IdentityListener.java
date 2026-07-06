@@ -64,9 +64,14 @@ public class IdentityListener implements Listener {
 
         if (helmet != null && helmet.getType() == Material.PLAYER_HEAD) {
             SkullMeta meta = (SkullMeta) helmet.getItemMeta();
-            if (meta != null && meta.getOwningPlayer() != null) {
-                String targetSkinName = meta.getOwningPlayer().getName();
-                if (targetSkinName != null) {
+            if (meta != null) {
+                
+                String targetSkinName = null;
+                if (meta.getOwningPlayer() != null) {
+                    targetSkinName = meta.getOwningPlayer().getName();
+                }
+
+                if (targetSkinName != null && !targetSkinName.isEmpty()) {
                     
                     if (targetSkinName.equals(activeDisguises.get(player.getUniqueId()))) {
                         return;
@@ -74,14 +79,21 @@ public class IdentityListener implements Listener {
 
                     activeDisguises.put(player.getUniqueId(), targetSkinName);
                     
+                    // On envoie toutes les syntaxes possibles à la console
+                    Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "skin set " + player.getName() + " " + targetSkinName);
                     Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "skinsrestorer set " + player.getName() + " " + targetSkinName);
+                    Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "sr set " + player.getName() + " " + targetSkinName);
                     
                     player.sendMessage("§a🎭 Tu as volé le skin de " + targetSkinName + " ! Enlève la tête pour reprendre le tien.");
                 }
             }
         } else {
             if (activeDisguises.containsKey(player.getUniqueId())) {
+                
+                // On nettoie avec toutes les syntaxes possibles
+                Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "skin clear " + player.getName());
                 Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "skinsrestorer clear " + player.getName());
+                Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "sr clear " + player.getName());
                 
                 activeDisguises.remove(player.getUniqueId());
                 
