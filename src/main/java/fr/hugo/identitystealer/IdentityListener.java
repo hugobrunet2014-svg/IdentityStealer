@@ -7,6 +7,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.meta.SkullMeta;
@@ -59,6 +60,16 @@ public class IdentityListener implements Listener {
         }
     }
 
+    @EventHandler
+    public void onPlayerChat(AsyncPlayerChatEvent event) {
+        Player player = event.getPlayer();
+        if (activeDisguises.containsKey(player.getUniqueId())) {
+            String fakeName = activeDisguises.get(player.getUniqueId());
+            String currentFormat = event.getFormat();
+            event.setFormat(currentFormat.replace(player.getName(), fakeName));
+        }
+    }
+
     private void checkHelmet(Player player) {
         ItemStack helmet = player.getInventory().getHelmet();
 
@@ -79,17 +90,24 @@ public class IdentityListener implements Listener {
 
                     activeDisguises.put(player.getUniqueId(), targetSkinName);
                     
-                    // ICI : Le joueur exécute exactement TA commande fonctionnelle
+                    // Applique le skin
                     player.performCommand("skin set " + targetSkinName);
                     
-                    player.sendMessage("§a🎭 Tu as volé le skin de " + targetSkinName + " ! Enlève la tête pour reprendre le tien.");
+                    // MODIFIE LE NOM (Dans la liste TAB + Au-dessus du personnage)
+                    player.setDisplayName(targetSkinName);
+                    player.setPlayerListName(targetSkinName);
+                    
+                    player.sendMessage("§a🎭 Tu as volé l'identité de " + targetSkinName + " ! Enlève la tête pour reprendre la tienne.");
                 }
             }
         } else {
             if (activeDisguises.containsKey(player.getUniqueId())) {
                 
-                // Le joueur nettoie son propre skin
                 player.performCommand("skin clear");
+                
+                // REMET LES NOMS D'ORIGINE
+                player.setDisplayName(player.getName());
+                player.setPlayerListName(player.getName());
                 
                 activeDisguises.remove(player.getUniqueId());
                 
@@ -97,7 +115,7 @@ public class IdentityListener implements Listener {
                     onlinePlayer.sendEquipmentChange(player, EquipmentSlot.HEAD, player.getInventory().getHelmet() != null ? player.getInventory().getHelmet() : new ItemStack(Material.AIR));
                 }
                 
-                player.sendMessage("§e🎭 Tu as repris ton skin d'origine.");
+                player.sendMessage("§e🎭 Tu as repris ton identité d'origine.");
             }
         }
     }
