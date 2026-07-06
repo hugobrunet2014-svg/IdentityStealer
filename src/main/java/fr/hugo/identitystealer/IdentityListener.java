@@ -102,8 +102,6 @@ public class IdentityListener implements Listener {
                     
                     updatePlayerNameTag(player, targetSkinName);
                     
-                    refreshPlayerForOthers(player);
-                    
                     player.sendMessage("§a🎭 Tu as volé l'identité de " + targetSkinName + " ! Enlève la tête pour reprendre la tienne.");
                 }
             }
@@ -118,8 +116,6 @@ public class IdentityListener implements Listener {
                 removePlayerFromNameTag(player);
                 
                 activeDisguises.remove(player.getUniqueId());
-                
-                refreshPlayerForOthers(player);
                 
                 for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
                     onlinePlayer.sendEquipmentChange(player, EquipmentSlot.HEAD, player.getInventory().getHelmet() != null ? player.getInventory().getHelmet() : new ItemStack(Material.AIR));
@@ -160,15 +156,5 @@ public class IdentityListener implements Listener {
         }
         player.setCustomName(null);
         player.setCustomNameVisible(false);
-    }
-
-    // 👇 REMPLACÉ PAR UNE MÉTHODE ULTRA COMPATIBLE QUI NE PLANTERA JAMAIS 👇
-    private void refreshPlayerForOthers(Player player) {
-        for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-            if (!onlinePlayer.equals(player)) {
-                // On force une mise à jour de l'entité sans utiliser les fonctions hide/show instables
-                onlinePlayer.sendEquipmentChange(player, EquipmentSlot.HEAD, player.getInventory().getHelmet() != null ? player.getInventory().getHelmet() : new ItemStack(Material.AIR));
-            }
-        }
     }
 }
