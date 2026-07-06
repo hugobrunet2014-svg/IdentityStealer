@@ -16,7 +16,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.Bukkit;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
-import net.kyori.adventure.text.Component;
+
 import java.util.HashMap;
 import java.util.UUID;
 
@@ -58,9 +58,6 @@ public class IdentityListener implements Listener {
         Player player = event.getPlayer();
         if (activeDisguises.containsKey(player.getUniqueId())) {
             updateInvisibility(player);
-            
-            String fakeName = activeDisguises.get(player.getUniqueId());
-            player.sendActionBar(Component.text("§eIdentité actuelle : §6" + fakeName + " §a🎭"));
         }
     }
 
@@ -81,22 +78,17 @@ public class IdentityListener implements Listener {
 
                     activeDisguises.put(player.getUniqueId(), targetSkinName);
                     
-                    // Applique le skin
+                    // Applique le skin via la commande
                     player.performCommand("skin set " + targetSkinName);
 
-                    // --- FORCE LE RECOUVREMENT DU PSEUDO AU-DESSUS DE LA TÊTE (NAMETAG) ---
+                    // --- NOM AU-DESSUS DE LA TÊTE ET TAB (Méthode standard) ---
                     setupFakeNametag(player, targetSkinName);
-
-                    // Changement dans le TAB et nom d'affichage interne
-                    player.playerListName(Component.text(targetSkinName));
-                    player.displayName(Component.text(targetSkinName));
+                    player.setPlayerListName(targetSkinName);
+                    player.setDisplayName(targetSkinName);
 
                     updateInvisibility(player);
                     
-                    player.showTitle(net.kyori.adventure.title.Title.title(
-                        Component.text("§aIdentité Volée !"),
-                        Component.text("§7Tu es maintenant §e" + targetSkinName)
-                    ));
+                    player.sendMessage("§a🎭 Tu as volé l'identité de " + targetSkinName + " ! Enlève la tête pour redevenir toi-même.");
                 }
             }
         } 
@@ -105,11 +97,10 @@ public class IdentityListener implements Listener {
             if (activeDisguises.containsKey(player.getUniqueId())) {
                 player.performCommand("skin clear");
                 
-                // --- SUPPRIME LE FAUX PSEUDO AU-DESSUS DE LA TÊTE ---
+                // --- RESET NOM ET TAB ---
                 removeFakeNametag(player);
-                
-                player.playerListName(Component.text(player.getName()));
-                player.displayName(Component.text(player.getName()));
+                player.setPlayerListName(player.getName());
+                player.setDisplayName(player.getName());
                 
                 activeDisguises.remove(player.getUniqueId());
                 
@@ -117,13 +108,11 @@ public class IdentityListener implements Listener {
                     onlinePlayer.sendEquipmentChange(player, EquipmentSlot.HEAD, new ItemStack(Material.AIR));
                 }
                 
-                player.sendActionBar(Component.text(""));
                 player.sendMessage("§e🎭 Tu as repris ton identité d'origine.");
             }
         }
     }
 
-    // Crée une équipe dédiée pour modifier le nom affiché au-dessus du joueur
     private void setupFakeNametag(Player player, String fakeName) {
         Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
         String teamName = "id_" + player.getUniqueId().toString().substring(0, 10);
@@ -133,10 +122,9 @@ public class IdentityListener implements Listener {
             team = scoreboard.registerNewTeam(teamName);
         }
         
-        // On remplace le préfixe ou le nom par le faux pseudo
-        team.prefix(Component.text(""));
-        team.suffix(Component.text(""));
-        player.customName(Component.text(fakeName));
+        team.setPrefix("");
+        team.setSuffix("");
+        player.setCustomName(fakeName);
         player.setCustomNameVisible(true);
         
         if (!team.hasEntry(player.getName())) {
@@ -144,7 +132,6 @@ public class IdentityListener implements Listener {
         }
     }
 
-    // Supprime l'équipe et restaure le nametag par défaut
     private void removeFakeNametag(Player player) {
         Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
         String teamName = "id_" + player.getUniqueId().toString().substring(0, 10);
@@ -153,7 +140,7 @@ public class IdentityListener implements Listener {
         if (team != null) {
             team.unregister();
         }
-        player.customName(null);
+        player.setCustomName(null);
         player.setCustomNameVisible(false);
     }
 
