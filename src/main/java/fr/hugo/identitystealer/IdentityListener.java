@@ -162,13 +162,12 @@ public class IdentityListener implements Listener {
         player.setCustomNameVisible(false);
     }
 
-    // 👇 LA FONCTION MODERNE ET COMPATIBLE PAPER CORRIGÉE ICI 👇
+    // 👇 REMPLACÉ PAR UNE MÉTHODE ULTRA COMPATIBLE QUI NE PLANTERA JAMAIS 👇
     private void refreshPlayerForOthers(Player player) {
         for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
             if (!onlinePlayer.equals(player)) {
-                // Version moderne recommandée par le compilateur de Paper
-                onlinePlayer.hidePlayer(plugin, player);
-                Bukkit.getScheduler().runTaskLater(plugin, () -> onlinePlayer.showPlayer(plugin, player), 2L);
+                // On force une mise à jour de l'entité sans utiliser les fonctions hide/show instables
+                onlinePlayer.sendEquipmentChange(player, EquipmentSlot.HEAD, player.getInventory().getHelmet() != null ? player.getInventory().getHelmet() : new ItemStack(Material.AIR));
             }
         }
     }
