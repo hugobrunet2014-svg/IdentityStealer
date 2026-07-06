@@ -3,6 +3,7 @@ package fr.hugo.identitystealer;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
@@ -50,12 +51,15 @@ public class IdentityListener implements Listener {
         }
     }
 
-    // Sécurité absolue : À chaque mouvement, si le joueur est déguisé, on force le masque invisible pour tout le monde
     @EventHandler
     public void onPlayerMove(PlayerMoveEvent event) {
         Player player = event.getPlayer();
         if (activeDisguises.containsKey(player.getUniqueId())) {
             updateInvisibility(player);
+            
+            // Affichage dans la barre d'action
+            String fakeName = activeDisguises.get(player.getUniqueId());
+            player.sendActionBar(Component.text("§eIdentité actuelle : §6" + fakeName + " §a🎭"));
         }
     }
 
@@ -79,7 +83,7 @@ public class IdentityListener implements Listener {
                     // Applique le skin
                     player.performCommand("skin set " + targetSkinName);
 
-                    // Changement d'identité (TAB, Chat, etc.)
+                    // --- CHANGER LE TAB ET LE PSEUDO AU-DESSUS DU JOUEUR ---
                     player.customName(Component.text(targetSkinName));
                     player.setCustomNameVisible(true);
                     player.playerListName(Component.text(targetSkinName));
@@ -87,7 +91,11 @@ public class IdentityListener implements Listener {
 
                     updateInvisibility(player);
                     
-                    player.sendMessage("§a🎭 Tu as volé l'identité de " + targetSkinName + " ! Enlève la tête de ton inventaire pour redevenir toi-même.");
+                    // Titre écran
+                    player.showTitle(net.kyori.adventure.title.Title.title(
+                        Component.text("§aIdentité Volée !"),
+                        Component.text("§7Tu es maintenant §e" + targetSkinName)
+                    ));
                 }
             }
         } 
@@ -96,35 +104,38 @@ public class IdentityListener implements Listener {
             if (activeDisguises.containsKey(player.getUniqueId())) {
                 player.performCommand("skin clear");
                 
+                // --- RESET LE TAB ET LE PSEUDO ---
                 player.customName(null);
                 player.setCustomNameVisible(false);
-                player.playerListName(null);
+                player.playerListName(Component.text(player.getName()));
                 player.displayName(Component.text(player.getName()));
                 
                 activeDisguises.remove(player.getUniqueId());
                 
-                // On remet à jour l'affichage normal pour tout le monde
                 for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
                     onlinePlayer.sendEquipmentChange(player, EquipmentSlot.HEAD, new ItemStack(Material.AIR));
                 }
+                
+                player.sendActionBar(Component.text(""));
                 player.sendMessage("§e🎭 Tu as repris ton identité d'origine.");
             }
         }
     }
 
-    // Envoie en boucle le paquet "Pas de casque" pour contrer les mises à jour de Minecraft
     private void updateInvisibility(Player player) {
         for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
             onlinePlayer.sendEquipmentChange(player, EquipmentSlot.HEAD, new ItemStack(Material.AIR));
         }
     }
 
+    // --- INTERCEPTER LE CHAT ET FORCER LE FAUX NOM ---
     @SuppressWarnings("deprecation")
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGHEST) // Priorité haute pour passer au-dessus des autres plugins
     public void onPlayerChat(AsyncPlayerChatEvent event) {
         Player player = event.getPlayer();
         if (activeDisguises.containsKey(player.getUniqueId())) {
             String fakeName = activeDisguises.get(player.getUniqueId());
+            // On réécrit complètement le format du message envoyé dans le chat
             event.setFormat("<" + fakeName + "> %2$s");
         }
     }
