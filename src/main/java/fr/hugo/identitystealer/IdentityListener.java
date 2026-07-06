@@ -14,6 +14,8 @@ import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.Bukkit;
+import org.bukkit.scoreboard.Scoreboard;
+import org.bukkit.scoreboard.Team;
 import net.kyori.adventure.text.Component;
 import java.util.HashMap;
 import java.util.UUID;
@@ -57,7 +59,6 @@ public class IdentityListener implements Listener {
         if (activeDisguises.containsKey(player.getUniqueId())) {
             updateInvisibility(player);
             
-            // Affichage dans la barre d'action
             String fakeName = activeDisguises.get(player.getUniqueId());
             player.sendActionBar(Component.text("§eIdentité actuelle : §6" + fakeName + " §a🎭"));
         }
@@ -83,15 +84,15 @@ public class IdentityListener implements Listener {
                     // Applique le skin
                     player.performCommand("skin set " + targetSkinName);
 
-                    // --- CHANGER LE TAB ET LE PSEUDO AU-DESSUS DU JOUEUR ---
-                    player.customName(Component.text(targetSkinName));
-                    player.setCustomNameVisible(true);
+                    // --- FORCE LE RECOUVREMENT DU PSEUDO AU-DESSUS DE LA TÊTE (NAMETAG) ---
+                    setupFakeNametag(player, targetSkinName);
+
+                    // Changement dans le TAB et nom d'affichage interne
                     player.playerListName(Component.text(targetSkinName));
                     player.displayName(Component.text(targetSkinName));
 
                     updateInvisibility(player);
                     
-                    // Titre écran
                     player.showTitle(net.kyori.adventure.title.Title.title(
                         Component.text("§aIdentité Volée !"),
                         Component.text("§7Tu es maintenant §e" + targetSkinName)
@@ -104,9 +105,9 @@ public class IdentityListener implements Listener {
             if (activeDisguises.containsKey(player.getUniqueId())) {
                 player.performCommand("skin clear");
                 
-                // --- RESET LE TAB ET LE PSEUDO ---
-                player.customName(null);
-                player.setCustomNameVisible(false);
+                // --- SUPPRIME LE FAUX PSEUDO AU-DESSUS DE LA TÊTE ---
+                removeFakeNametag(player);
+                
                 player.playerListName(Component.text(player.getName()));
                 player.displayName(Component.text(player.getName()));
                 
@@ -122,20 +123,52 @@ public class IdentityListener implements Listener {
         }
     }
 
+    // Crée une équipe dédiée pour modifier le nom affiché au-dessus du joueur
+    private void setupFakeNametag(Player player, String fakeName) {
+        Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
+        String teamName = "id_" + player.getUniqueId().toString().substring(0, 10);
+        
+        Team team = scoreboard.getTeam(teamName);
+        if (team == null) {
+            team = scoreboard.registerNewTeam(teamName);
+        }
+        
+        // On remplace le préfixe ou le nom par le faux pseudo
+        team.prefix(Component.text(""));
+        team.suffix(Component.text(""));
+        player.customName(Component.text(fakeName));
+        player.setCustomNameVisible(true);
+        
+        if (!team.hasEntry(player.getName())) {
+            team.addEntry(player.getName());
+        }
+    }
+
+    // Supprime l'équipe et restaure le nametag par défaut
+    private void removeFakeNametag(Player player) {
+        Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
+        String teamName = "id_" + player.getUniqueId().toString().substring(0, 10);
+        
+        Team team = scoreboard.getTeam(teamName);
+        if (team != null) {
+            team.unregister();
+        }
+        player.customName(null);
+        player.setCustomNameVisible(false);
+    }
+
     private void updateInvisibility(Player player) {
         for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
             onlinePlayer.sendEquipmentChange(player, EquipmentSlot.HEAD, new ItemStack(Material.AIR));
         }
     }
 
-    // --- INTERCEPTER LE CHAT ET FORCER LE FAUX NOM ---
     @SuppressWarnings("deprecation")
-    @EventHandler(priority = EventPriority.HIGHEST) // Priorité haute pour passer au-dessus des autres plugins
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerChat(AsyncPlayerChatEvent event) {
         Player player = event.getPlayer();
         if (activeDisguises.containsKey(player.getUniqueId())) {
             String fakeName = activeDisguises.get(player.getUniqueId());
-            // On réécrit complètement le format du message envoyé dans le chat
             event.setFormat("<" + fakeName + "> %2$s");
         }
     }
