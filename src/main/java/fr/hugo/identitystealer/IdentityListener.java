@@ -11,22 +11,20 @@ import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.meta.SkullMeta;
+import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.Bukkit;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
-
-// 👇 L'IMPORTATION MANQUANTE QUI FAISAIT PLANTER LE BUILD 👇
-import fr.hugo.identitystealer.IdentityStealer;
 
 import java.util.HashMap;
 import java.util.UUID;
 
 public class IdentityListener implements Listener {
 
-    private final IdentityStealer plugin;
+    private final JavaPlugin plugin;
     private final HashMap<UUID, String> activeDisguises = new HashMap<>();
 
-    public IdentityListener(IdentityStealer plugin) {
+    public IdentityListener(JavaPlugin plugin) {
         this.plugin = plugin;
     }
 
