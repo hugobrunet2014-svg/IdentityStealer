@@ -6,9 +6,10 @@ public class IdentityStealer extends JavaPlugin {
 
     @Override
     public void onEnable() {
-        // Enregistrement des détecteurs d'événements
+        // Enregistrement de tous nos détecteurs
         getServer().getPluginManager().registerEvents(new PlayerKillListener(), this);
         getServer().getPluginManager().registerEvents(new SkinListener(this), this);
+        getServer().getPluginManager().registerEvents(new IdentityListener(this), this);
         
         getLogger().info("==========================================");
         getLogger().info("IdentityStealer v1.0 par Hugo - ACTIVE");
