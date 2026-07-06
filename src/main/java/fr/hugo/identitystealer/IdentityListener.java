@@ -55,7 +55,6 @@ public class IdentityListener implements Listener {
     public void onPlayerMove(PlayerMoveEvent event) {
         Player player = event.getPlayer();
         if (activeDisguises.containsKey(player.getUniqueId())) {
-            // Cache la grosse tête en continu pour tout le monde
             for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
                 onlinePlayer.sendEquipmentChange(player, EquipmentSlot.HEAD, new ItemStack(Material.AIR));
             }
@@ -78,14 +77,14 @@ public class IdentityListener implements Listener {
 
                     activeDisguises.put(player.getUniqueId(), targetSkinName);
                     
-                    // 1. On applique le SKIN visuel
+                    // 1. Skin visuel via la console
                     Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "skinsrestorer set " + player.getName() + " " + targetSkinName);
 
-                    // 2. On ordonne de force au plugin TAB de changer ton Nametag et ton nom dans la liste !
+                    // 2. Ordonne au plugin TAB de changer le Nametag et la Tablist de force !
                     Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "tab player " + player.getName() + " customtabname " + targetSkinName);
                     Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "tab player " + player.getName() + " customtagname " + targetSkinName);
 
-                    // 3. Changement des variables de base de Paper
+                    // 3. Variables internes
                     player.setPlayerListName(targetSkinName);
                     player.setDisplayName(targetSkinName);
                     
@@ -96,10 +95,9 @@ public class IdentityListener implements Listener {
         // Cas 2 : Le joueur RETIRE la tête
         else {
             if (activeDisguises.containsKey(player.getUniqueId())) {
-                // On réinitialise le skin
                 Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "skinsrestorer clear " + player.getName());
                 
-                // On demande au plugin TAB de remettre ton vrai nom et tes grades d'origine
+                // On demande au plugin TAB de restaurer ton identité et tes grades d'origine
                 Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "tab player " + player.getName() + " remove customtabname");
                 Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "tab player " + player.getName() + " remove customtagname");
 
