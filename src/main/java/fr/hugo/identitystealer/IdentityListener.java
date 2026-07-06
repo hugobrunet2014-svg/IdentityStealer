@@ -53,7 +53,6 @@ public class IdentityListener implements Listener {
     public void onPlayerMove(PlayerMoveEvent event) {
         Player player = event.getPlayer();
         if (activeDisguises.containsKey(player.getUniqueId())) {
-            // Rend la grosse tête invisible pour les autres joueurs en continu
             for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
                 onlinePlayer.sendEquipmentChange(player, EquipmentSlot.HEAD, new ItemStack(Material.AIR));
             }
@@ -63,7 +62,6 @@ public class IdentityListener implements Listener {
     private void checkHelmet(Player player) {
         ItemStack helmet = player.getInventory().getHelmet();
 
-        // Cas 1 : Le joueur ÉQUIPE une tête
         if (helmet != null && helmet.getType() == Material.PLAYER_HEAD) {
             SkullMeta meta = (SkullMeta) helmet.getItemMeta();
             if (meta != null && meta.getOwningPlayer() != null) {
@@ -76,22 +74,17 @@ public class IdentityListener implements Listener {
 
                     activeDisguises.put(player.getUniqueId(), targetSkinName);
                     
-                    // On applique uniquement le skin via SkinsRestorer
                     Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "skinsrestorer set " + player.getName() + " " + targetSkinName);
                     
                     player.sendMessage("§a🎭 Tu as volé le skin de " + targetSkinName + " ! Enlève la tête pour reprendre le tien.");
                 }
             }
-        } 
-        // Cas 2 : Le joueur RETIRE la tête
-        else {
+        } else {
             if (activeDisguises.containsKey(player.getUniqueId())) {
-                // On remet ton vrai skin d'origine
                 Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "skinsrestorer clear " + player.getName());
                 
                 activeDisguises.remove(player.getUniqueId());
                 
-                // On réaffiche correctement le casque si tu mets un autre chapeau plus tard
                 for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
                     onlinePlayer.sendEquipmentChange(player, EquipmentSlot.HEAD, player.getInventory().getHelmet() != null ? player.getInventory().getHelmet() : new ItemStack(Material.AIR));
                 }
