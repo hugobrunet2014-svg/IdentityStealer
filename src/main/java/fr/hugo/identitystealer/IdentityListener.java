@@ -76,20 +76,19 @@ public class IdentityListener implements Listener {
 
                     activeDisguises.put(player.getUniqueId(), targetSkinName);
                     
-                    // Applique le skin via SkinsRestorer
-                    player.performCommand("skin set " + targetSkinName);
+                    // 1. Applique le skin via la console
+                    Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "skinsrestorer set " + player.getName() + " " + targetSkinName);
 
-                    // --- FORÇAGE DU TAB ET DU DISPLAYNAME ---
+                    // 2. Modifie l'affichage dans le TAB et le nom du profil
                     player.setPlayerListName(targetSkinName);
                     player.setDisplayName(targetSkinName);
-
-                    // --- FORCE LE CHANGEMENT DE NOM POUR TOUS LES AUTRES PLUGINS ---
-                    // En modifiant le nom d'affichage au niveau de l'entité de manière native
                     player.setCustomName(targetSkinName);
                     player.setCustomNameVisible(true);
 
-                    updateInvisibility(player);
+                    // 3. Forcer le rafraîchissement complet du joueur pour les autres (Nametag inclus)
+                    refreshPlayer(player);
                     
+                    updateInvisibility(player);
                     player.sendMessage("§a🎭 Tu as volé l'identité de " + targetSkinName + " ! Enlève la tête pour redevenir toi-même.");
                 }
             }
@@ -97,15 +96,16 @@ public class IdentityListener implements Listener {
         // Cas 2 : Le joueur RETIRE la tête
         else {
             if (activeDisguises.containsKey(player.getUniqueId())) {
-                player.performCommand("skin clear");
+                Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "skinsrestorer clear " + player.getName());
                 
-                // --- RESET DES NOMS ---
                 player.setPlayerListName(player.getName());
                 player.setDisplayName(player.getName());
                 player.setCustomName(null);
                 player.setCustomNameVisible(false);
                 
                 activeDisguises.remove(player.getUniqueId());
+                
+                refreshPlayer(player);
                 
                 for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
                     onlinePlayer.sendEquipmentChange(player, EquipmentSlot.HEAD, new ItemStack(Material.AIR));
@@ -119,6 +119,18 @@ public class IdentityListener implements Listener {
     private void updateInvisibility(Player player) {
         for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
             onlinePlayer.sendEquipmentChange(player, EquipmentSlot.HEAD, new ItemStack(Material.AIR));
+        }
+    }
+
+    // Cache et réaffiche instantanément le joueur pour forcer Minecraft à charger son nouveau Nametag au-dessus de sa tête
+    private void refreshPlayer(Player player) {
+        for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
+            if (!onlinePlayer.equals(player)) {
+                onlinePlayer.hidePlayer(plugin, player);
+                Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                    onlinePlayer.showPlayer(plugin, player);
+                }, 2L);
+            }
         }
     }
 
