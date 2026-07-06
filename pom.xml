@@ -17,36 +17,17 @@
     </properties>
 
     <repositories>
-        <!-- Dépôt pour Paper/Spigot -->
         <repository>
             <id>papermc-repo</id>
             <url>https://repo.papermc.io/repository/maven-public/</url>
         </repository>
-        <repository>
-            <id>sonatype</id>
-            <url>https://oss.sonatype.org/content/groups/public/</url>
-        </repository>
-        <!-- Dépôt officiel pour le plugin TAB -->
-        <repository>
-            <id>neznamy</id>
-            <url>https://repo.api.neznamy.me/</url>
-        </repository>
     </repositories>
 
     <dependencies>
-        <!-- API Paper (Minecraft) -->
         <dependency>
             <groupId>io.papermc.paper</groupId>
             <artifactId>paper-api</artifactId>
             <version>1.20.4-R0.1-SNAPSHOT</version>
-            <scope>provided</scope>
-        </dependency>
-        
-        <!-- API du plugin TAB (pour forcer les nametags) -->
-        <dependency>
-            <groupId>me.neznamy</groupId>
-            <artifactId>tab-api</artifactId>
-            <version>4.1.5</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>
