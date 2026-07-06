@@ -62,13 +62,19 @@ public class IdentityListener implements Listener {
         }
     }
 
+    // 💬 CHAT BLINDÉ : Force le pseudo de la tête à 100% dans le chat
     @EventHandler
     public void onPlayerChat(AsyncPlayerChatEvent event) {
         Player player = event.getPlayer();
         if (activeDisguises.containsKey(player.getUniqueId())) {
             String fakeName = activeDisguises.get(player.getUniqueId());
+            
+            // Étape 1 : On remplace dans le format global (essentiel pour la majorité des serveurs)
             String currentFormat = event.getFormat();
             event.setFormat(currentFormat.replace(player.getName(), fakeName));
+            
+            // Étape 2 : On change aussi le nom d'affichage au cas où le système de chat utilise le DisplayName
+            player.setDisplayName(fakeName);
         }
     }
 
@@ -92,15 +98,17 @@ public class IdentityListener implements Listener {
 
                     activeDisguises.put(player.getUniqueId(), targetSkinName);
                     
-                    // Applique le skin
+                    // Applique le skin via SkinsRestorer
                     player.performCommand("skin set " + targetSkinName);
                     
-                    // Modifie le nom dans le chat et la liste TAB
+                    // Modifie le nom pour le chat (DisplayName) et la liste de joueur (TAB)
                     player.setDisplayName(targetSkinName);
                     player.setPlayerListName(targetSkinName);
                     
-                    // MODIFIE LE NOM AU-DESSUS DE LA TÊTE (Système d'Équipe)
+                    // Modifie le nom au-dessus de la tête (Nettoyage de l'ancien pseudo)
                     updatePlayerNameTag(player, targetSkinName);
+                    
+                    refreshPlayerForOthers(player);
                     
                     player.sendMessage("§a🎭 Tu as volé l'identité de " + targetSkinName + " ! Enlève la tête pour reprendre la tienne.");
                 }
@@ -110,13 +118,15 @@ public class IdentityListener implements Listener {
                 
                 player.performCommand("skin clear");
                 
+                // Remet le vrai nom partout
                 player.setDisplayName(player.getName());
                 player.setPlayerListName(player.getName());
                 
-                // RETIRE LE JOUEUR DE L'ÉQUIPE DU FAUX PSEUDO
                 removePlayerFromNameTag(player);
                 
                 activeDisguises.remove(player.getUniqueId());
+                
+                refreshPlayerForOthers(player);
                 
                 for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
                     onlinePlayer.sendEquipmentChange(player, EquipmentSlot.HEAD, player.getInventory().getHelmet() != null ? player.getInventory().getHelmet() : new ItemStack(Material.AIR));
@@ -127,6 +137,7 @@ public class IdentityListener implements Listener {
         }
     }
 
+    // Gère le nom au-dessus de la tête en créant une équipe propre sans ton vrai pseudo accolé
     private void updatePlayerNameTag(Player player, String fakeName) {
         Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
         String teamName = "ids_" + player.getName();
@@ -136,10 +147,14 @@ public class IdentityListener implements Listener {
             team = scoreboard.registerNewTeam(teamName);
         }
         
-        // On change le préfixe ou le nom affiché dans l'équipe pour correspondre au faux pseudo
-        team.setPrefix(fakeName + " ");
-        // Note : Pour changer radicalement le texte brut au-dessus sans pack de textures ou gros plugins,
-        // l'utilisation du préfixe combinée à la disparition du pseudo d'origine est requise, ou bien on le gère ici :
+        // On met le faux pseudo en préfixe et on cache le vrai nom en changeant sa visibilité
+        team.setPrefix(fakeName + " §r");
+        team.setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.HIDE_FOR_OTHER_TEAMS);
+        
+        // Pour les versions récentes de Paper, on force l'affichage du préfixe comme seul nom
+        player.setCustomName(fakeName);
+        player.setCustomNameVisible(true);
+
         if (!team.hasEntry(player.getName())) {
             team.addEntry(player.getName());
         }
@@ -152,6 +167,17 @@ public class IdentityListener implements Listener {
         if (team != null) {
             team.removeEntry(player.getName());
             team.unregister();
+        }
+        player.setCustomName(null);
+        player.setCustomNameVisible(false);
+    }
+
+    private void refreshPlayerForOthers(Player player) {
+        for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
+            if (!onlinePlayer.equals(player)) {
+                onlinePlayer.hidePlayer(plugin, player);
+                Bukkit.getScheduler().runTaskLater(plugin, () -> onlinePlayer.showPlayer(plugin, player), 2L);
+            }
         }
     }
 }
