@@ -7,15 +7,20 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
+import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.Bukkit;
 import net.kyori.adventure.text.Component;
+import java.util.HashMap;
+import java.util.UUID;
 
 public class IdentityListener implements Listener {
 
     private final JavaPlugin plugin;
+    // Garde en mémoire qui est déguisé sous quel nom
+    private final HashMap<UUID, String> activeDisguises = new HashMap<>();
 
     public IdentityListener(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -25,15 +30,72 @@ public class IdentityListener implements Listener {
     public void onInventoryClick(InventoryClickEvent event) {
         if (!(event.getWhoClicked() instanceof Player)) return;
         Player player = (Player) event.getWhoClicked();
-        Bukkit.getScheduler().runTaskLater(plugin, () -> updateIdentity(player), 1L);
+        // On attend 1 tick que l'item se place pour vérifier le casque
+        Bukkit.getScheduler().runTaskLater(plugin, () -> checkHelmet(player), 1L);
     }
 
     @EventHandler
     public void onPlayerInteract(PlayerInteractEvent event) {
         Player player = event.getPlayer();
         ItemStack item = event.getItem();
+        
+        // Bloque l'action si c'est un clic droit rapide avec une tête pour éviter les bugs
         if (item != null && item.getType() == Material.PLAYER_HEAD) {
-            Bukkit.getScheduler().runTaskLater(plugin, () -> updateIdentity(player), 1L);
+            Bukkit.getScheduler().runTaskLater(plugin, () -> checkHelmet(player), 1L);
+        }
+    }
+
+    private void checkHelmet(Player player) {
+        ItemStack helmet = player.getInventory().getHelmet();
+
+        if (helmet != null && helmet.getType() == Material.PLAYER_HEAD) {
+            SkullMeta meta = (SkullMeta) helmet.getItemMeta();
+            if (meta != null && meta.getOwningPlayer() != null) {
+                String targetSkinName = meta.getOwningPlayer().getName();
+                if (targetSkinName != null) {
+                    
+                    // 1. On enregistre son faux nom
+                    activeDisguises.put(player.getUniqueId(), targetSkinName);
+                    
+                    // 2. C'est la CONSOLE qui exécute la commande (plus de fermeture d'inventaire !)
+                    Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "skinsrestorer set " + player.getName() + " " + targetSkinName);
+
+                    // 3. On change son identité (TAB et au-dessus de la tête)
+                    player.customName(Component.text(targetSkinName));
+                    player.setCustomNameVisible(true);
+                    player.playerListName(Component.text(targetSkinName));
+                    player.displayName(Component.text(targetSkinName));
+
+                    // 4. ASTUCE de la grosse tête : On lui retire le casque visuel pour ne pas gâcher le skin !
+                    player.getInventory().setHelmet(null);
+                    player.sendMessage("§a🎭 Tu as volé l'identité de " + targetSkinName + " ! Tape /unmask pour reprendre ton apparence.");
+                }
+            }
+        }
+    }
+
+    // Commande manuelle pour enlever le masque puisque la tête n'est plus sur le casque !
+    @EventHandler
+    public void onCommand(PlayerCommandPreprocessEvent event) {
+        Player player = event.getPlayer();
+        if (event.getMessage().equalsIgnoreCase("/unmask")) {
+            event.setCancelled(true);
+            if (activeDisguises.containsKey(player.getUniqueId())) {
+                
+                // Reset du skin via la console
+                Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "skinsrestorer clear " + player.getName());
+                
+                // Reset de l'identité
+                player.customName(null);
+                player.setCustomNameVisible(false);
+                player.playerListName(null);
+                player.displayName(Component.text(player.getName()));
+                
+                activeDisguises.remove(player.getUniqueId());
+                player.sendMessage("§e🎭 Tu as repris ton identité d'origine.");
+            } else {
+                player.sendMessage("§cTu n'es pas déguisé actuellement.");
+            }
         }
     }
 
@@ -41,41 +103,10 @@ public class IdentityListener implements Listener {
     @EventHandler
     public void onPlayerChat(AsyncPlayerChatEvent event) {
         Player player = event.getPlayer();
-        ItemStack helmet = player.getInventory().getHelmet();
-
-        if (helmet != null && helmet.getType() == Material.PLAYER_HEAD) {
-            SkullMeta meta = (SkullMeta) helmet.getItemMeta();
-            if (meta != null && meta.getOwningPlayer() != null) {
-                String fakeName = meta.getOwningPlayer().getName();
-                if (fakeName != null) {
-                    // Modifie le format du chat pour afficher le faux nom
-                    event.setFormat("<" + fakeName + "> %2$s");
-                }
-            }
+        // Si le joueur est enregistré dans nos déguisements actifs, on modifie son nom dans le chat
+        if (activeDisguises.containsKey(player.getUniqueId())) {
+            String fakeName = activeDisguises.get(player.getUniqueId());
+            event.setFormat("<" + fakeName + "> %2$s");
         }
-    }
-
-    private void updateIdentity(Player player) {
-        ItemStack helmet = player.getInventory().getHelmet();
-
-        if (helmet != null && helmet.getType() == Material.PLAYER_HEAD) {
-            SkullMeta meta = (SkullMeta) helmet.getItemMeta();
-            if (meta != null && meta.getOwningPlayer() != null) {
-                String fakeName = meta.getOwningPlayer().getName();
-                if (fakeName != null) {
-                    player.customName(Component.text(fakeName));
-                    player.setCustomNameVisible(true);
-                    player.playerListName(Component.text(fakeName));
-                    player.displayName(Component.text(fakeName));
-                    return;
-                }
-            }
-        }
-        
-        // Reset complet quand on l'enlève
-        player.customName(null);
-        player.setCustomNameVisible(false);
-        player.playerListName(null);
-        player.displayName(Component.text(player.getName()));
     }
 }
