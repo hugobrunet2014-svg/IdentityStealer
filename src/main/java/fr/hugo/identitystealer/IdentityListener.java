@@ -14,8 +14,6 @@ import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.Bukkit;
-import org.bukkit.scoreboard.Scoreboard;
-import org.bukkit.scoreboard.Team;
 
 import java.util.HashMap;
 import java.util.UUID;
@@ -78,13 +76,17 @@ public class IdentityListener implements Listener {
 
                     activeDisguises.put(player.getUniqueId(), targetSkinName);
                     
-                    // Applique le skin via la commande
+                    // Applique le skin via SkinsRestorer
                     player.performCommand("skin set " + targetSkinName);
 
-                    // --- NOM AU-DESSUS DE LA TÊTE ET TAB (Méthode standard) ---
-                    setupFakeNametag(player, targetSkinName);
+                    // --- FORÇAGE DU TAB ET DU DISPLAYNAME ---
                     player.setPlayerListName(targetSkinName);
                     player.setDisplayName(targetSkinName);
+
+                    // --- FORCE LE CHANGEMENT DE NOM POUR TOUS LES AUTRES PLUGINS ---
+                    // En modifiant le nom d'affichage au niveau de l'entité de manière native
+                    player.setCustomName(targetSkinName);
+                    player.setCustomNameVisible(true);
 
                     updateInvisibility(player);
                     
@@ -97,10 +99,11 @@ public class IdentityListener implements Listener {
             if (activeDisguises.containsKey(player.getUniqueId())) {
                 player.performCommand("skin clear");
                 
-                // --- RESET NOM ET TAB ---
-                removeFakeNametag(player);
+                // --- RESET DES NOMS ---
                 player.setPlayerListName(player.getName());
                 player.setDisplayName(player.getName());
+                player.setCustomName(null);
+                player.setCustomNameVisible(false);
                 
                 activeDisguises.remove(player.getUniqueId());
                 
@@ -111,37 +114,6 @@ public class IdentityListener implements Listener {
                 player.sendMessage("§e🎭 Tu as repris ton identité d'origine.");
             }
         }
-    }
-
-    private void setupFakeNametag(Player player, String fakeName) {
-        Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
-        String teamName = "id_" + player.getUniqueId().toString().substring(0, 10);
-        
-        Team team = scoreboard.getTeam(teamName);
-        if (team == null) {
-            team = scoreboard.registerNewTeam(teamName);
-        }
-        
-        team.setPrefix("");
-        team.setSuffix("");
-        player.setCustomName(fakeName);
-        player.setCustomNameVisible(true);
-        
-        if (!team.hasEntry(player.getName())) {
-            team.addEntry(player.getName());
-        }
-    }
-
-    private void removeFakeNametag(Player player) {
-        Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
-        String teamName = "id_" + player.getUniqueId().toString().substring(0, 10);
-        
-        Team team = scoreboard.getTeam(teamName);
-        if (team != null) {
-            team.unregister();
-        }
-        player.setCustomName(null);
-        player.setCustomNameVisible(false);
     }
 
     private void updateInvisibility(Player player) {
