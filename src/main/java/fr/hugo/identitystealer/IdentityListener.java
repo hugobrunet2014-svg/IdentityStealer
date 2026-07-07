@@ -8,10 +8,9 @@ import org.bukkit.event.player.PlayerInteractEvent;
 public class IdentityListener implements Listener {
 
     @EventHandler
-    public void onInteract(PlayerInteractEvent event) {
-        // Logique : si le joueur fait un clic droit avec un objet spécifique
+    public void onPlayerInteract(PlayerInteractEvent event) {
         if (event.getItem() != null && event.getItem().getType() == Material.PLAYER_HEAD) {
-            // Ici, tu pourras appeler ta méthode de vol
+            // Exemple : si besoin d'une action spéciale au clic, on l'ajoutera ici
         }
     }
 }
