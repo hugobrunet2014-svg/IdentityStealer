@@ -1,6 +1,8 @@
 name: IdentityStealer
 version: 1.0
 main: fr.hugo.identitystealer.IdentityStealer
-api-version: 1.20
-author: Hugo
-description: Un plugin pour voler l'identité des joueurs en mettant leur tête.
+api-version: 1.21
+commands:
+  steal:
+    description: Permet de voler l'apparence d'un joueur.
+    usage: /steal <pseudo>
