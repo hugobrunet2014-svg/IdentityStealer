@@ -20,7 +20,10 @@ public class StealCommand implements CommandExecutor {
 
         String targetName = args[0];
 
-        // 1. Donner la tête
+        // 1. Enregistrer le vol dans la mémoire du plugin
+        IdentityListener.stolenIdentities.put(player.getUniqueId(), targetName);
+
+        // 2. Donner la tête
         ItemStack head = new ItemStack(Material.PLAYER_HEAD);
         SkullMeta meta = (SkullMeta) head.getItemMeta();
         PlayerProfile profile = Bukkit.createPlayerProfile(targetName);
@@ -28,9 +31,7 @@ public class StealCommand implements CommandExecutor {
         head.setItemMeta(meta);
         player.getInventory().addItem(head);
 
-        // 2. CORRECTION DU NOM (NametagEditX)
-        // Au lieu de mettre un préfixe, on va essayer de définir le nom affiché 
-        // NametagEditX utilise souvent cette syntaxe pour changer le nom complet
+        // 3. Appliquer le nom (NametagEditX)
         Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "ne clear " + player.getName());
         Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "ne " + player.getName() + " " + targetName);
 
