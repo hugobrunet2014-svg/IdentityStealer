@@ -4,19 +4,19 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 public class IdentityStealer extends JavaPlugin {
 
-    private static IdentityStealer instance;
-
     @Override
     public void onEnable() {
-        instance = this;
-        // Enregistrement des événements
-        getServer().getPluginManager().registerEvents(new IdentityListener(), this);
-        // Enregistrement de la commande
+        // Enregistrement des commandes
         getCommand("steal").setExecutor(new StealCommand());
-        getLogger().info("IdentityStealer est activé !");
+        
+        // Enregistrement des listeners
+        getServer().getPluginManager().registerEvents(new IdentityListener(), this);
+        
+        getLogger().info("IdentityStealer est activé avec succès !");
     }
 
-    public static IdentityStealer getInstance() {
-        return instance;
+    @Override
+    public void onDisable() {
+        getLogger().info("IdentityStealer est désactivé.");
     }
 }
