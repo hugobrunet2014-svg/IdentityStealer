@@ -2,6 +2,7 @@ name: IdentityStealer
 version: 1.0
 main: fr.hugo.identitystealer.IdentityStealer
 api-version: 1.21
+depend: [ProtocolLib]
 commands:
   steal:
     description: Permet de voler l'apparence d'un joueur.
