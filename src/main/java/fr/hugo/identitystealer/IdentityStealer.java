@@ -1,22 +1,22 @@
 package fr.hugo.identitystealer;
 
+import com.comphenix.protocol.ProtocolLibrary;
+import com.comphenix.protocol.ProtocolManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public class IdentityStealer extends JavaPlugin {
+    
+    private static ProtocolManager protocolManager;
 
     @Override
     public void onEnable() {
-        // Enregistrement des commandes
+        protocolManager = ProtocolLibrary.getProtocolManager();
+        // Enregistrement de la commande
         getCommand("steal").setExecutor(new StealCommand());
-        
-        // Enregistrement des listeners
-        getServer().getPluginManager().registerEvents(new IdentityListener(), this);
-        
-        getLogger().info("IdentityStealer est activé avec succès !");
+        getLogger().info("IdentityStealer activé avec ProtocolLib !");
     }
 
-    @Override
-    public void onDisable() {
-        getLogger().info("IdentityStealer est désactivé.");
+    public static ProtocolManager getProtocolManager() {
+        return protocolManager;
     }
 }
