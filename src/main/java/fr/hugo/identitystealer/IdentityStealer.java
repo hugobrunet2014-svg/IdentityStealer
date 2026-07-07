@@ -7,9 +7,11 @@ public class IdentityStealer extends JavaPlugin {
     @Override
     public void onEnable() {
         // Enregistrement de la commande
-        if (getCommand("steal") != null) {
-            getCommand("steal").setExecutor(new StealCommand());
-        }
-        getLogger().info("IdentityStealer a bien démarré !");
+        getCommand("steal").setExecutor(new StealCommand());
+        
+        // Enregistrement de l'écouteur d'événements (C'est ÇA qui manquait !)
+        getServer().getPluginManager().registerEvents(new IdentityListener(), this);
+        
+        getLogger().info("IdentityStealer est maintenant totalement actif !");
     }
 }
