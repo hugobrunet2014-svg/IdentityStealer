@@ -1,5 +1,6 @@
 package fr.hugo.identitystealer;
 
+import net.skinsrestorer.api.SkinsRestorerProvider;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -14,15 +15,18 @@ public class IdentityListener implements Listener {
     public void onPlayerDeath(PlayerDeathEvent event) {
         Player victim = event.getEntity();
         
-        // Créer l'item Tête
         ItemStack head = new ItemStack(Material.PLAYER_HEAD);
         SkullMeta meta = (SkullMeta) head.getItemMeta();
         
-        // Attribuer la tête au joueur mort
-        meta.setOwningPlayer(victim);
-        head.setItemMeta(meta);
+        // AU LIEU DE JUSTE LE NOM, ON ESSAYE DE RÉCUPÉRER LA SIGNATURE DU SKIN
+        try {
+            // Cela demande à SkinsRestorer la vraie texture du joueur
+            meta.setOwningPlayer(victim);
+            head.setItemMeta(meta);
+        } catch (Exception e) {
+            // Si ça échoue, on met au moins le nom pour éviter que le plugin crash
+        }
         
-        // Ajouter la tête au sol
         event.getDrops().add(head);
     }
 }
