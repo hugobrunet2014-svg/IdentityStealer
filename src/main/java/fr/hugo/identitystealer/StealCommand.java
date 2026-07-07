@@ -4,33 +4,43 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.scheduler.BukkitRunnable;
 
 public class StealCommand implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
-        if (!(sender instanceof Player)) return true;
-        Player player = (Player) sender;
-        
-        if (args.length < 1) {
-            player.sendMessage("§cUsage: /steal <pseudo>");
+        if (!(sender instanceof Player)) {
+            sender.sendMessage("Seuls les joueurs peuvent utiliser cette commande.");
             return true;
         }
 
-        String target = args[0];
+        if (args.length < 1) {
+            sender.sendMessage("Usage: /steal <pseudo>");
+            return true;
+        }
 
-        // 1. Skin : on utilise ta commande standard
-        player.performCommand("skin set " + target);
+        Player player = (Player) sender;
+        String targetName = args[0];
 
-        // 2. Nom : on nettoie d'abord, puis on applique le préfixe
-        // Note : Nte ajoute un préfixe. Pour "voler" l'identité, on met le nom en préfixe.
-        player.performCommand("nte player " + player.getName() + " clear");
+        // 1. Application du skin
+        player.performCommand("skinsrestorer set " + targetName);
+
+        // 2. Rafraîchissement visuel pour les autres (sans boucle complexe)
+        player.sendMessage("§aVol d'identité en cours pour : " + targetName);
         
-        // On définit le nom de la victime comme préfixe (en ajoutant un espace pour la lisibilité)
-        player.performCommand("nte player " + player.getName() + " prefix " + target);
+        // On rafraîchit le joueur pour tout le monde proprement
+        player.getServer().getOnlinePlayers().forEach(onlinePlayer -> {
+            onlinePlayer.hidePlayer(org.bukkit.plugin.java.JavaPlugin.getPlugin(IdentityStealer.class), player);
+            
+            new BukkitRunnable() {
+                @Override
+                public void run() {
+                    onlinePlayer.showPlayer(org.bukkit.plugin.java.JavaPlugin.getPlugin(IdentityStealer.class), player);
+                }
+            }.runTaskLater(org.bukkit.plugin.java.JavaPlugin.getPlugin(IdentityStealer.class), 20L);
+        });
 
-        player.sendMessage("§aIdentité de " + target + " volée !");
-        
         return true;
     }
 }
