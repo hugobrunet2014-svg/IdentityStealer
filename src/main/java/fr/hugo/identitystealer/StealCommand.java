@@ -14,33 +14,27 @@ public class StealCommand implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
-        if (!(sender instanceof Player)) {
-            sender.sendMessage("§cSeul un joueur peut utiliser cette commande.");
-            return true;
-        }
-
+        if (!(sender instanceof Player)) return true;
         Player player = (Player) sender;
-
-        if (args.length < 1) {
-            player.sendMessage("§cUsage: /steal <pseudo>");
-            return true;
-        }
+        if (args.length < 1) return true;
 
         String targetName = args[0];
 
-        // Création de la tête
+        // 1. Donner la tête
         ItemStack head = new ItemStack(Material.PLAYER_HEAD);
         SkullMeta meta = (SkullMeta) head.getItemMeta();
         PlayerProfile profile = Bukkit.createPlayerProfile(targetName);
         meta.setOwnerProfile(profile);
-        meta.setDisplayName("§dMasque de " + targetName);
         head.setItemMeta(meta);
         player.getInventory().addItem(head);
 
-        // Application du nom via NametagEditX
-        Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "ne player " + player.getName() + " prefix " + targetName);
+        // 2. CORRECTION DU NOM (NametagEditX)
+        // Au lieu de mettre un préfixe, on va essayer de définir le nom affiché 
+        // NametagEditX utilise souvent cette syntaxe pour changer le nom complet
+        Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "ne clear " + player.getName());
+        Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "ne " + player.getName() + " " + targetName);
 
-        player.sendMessage("§aTu as pris l'apparence de " + targetName + " !");
+        player.sendMessage("§aTu as pris l'identité de " + targetName);
         return true;
     }
 }
