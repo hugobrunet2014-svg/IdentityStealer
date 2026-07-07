@@ -18,11 +18,11 @@ public class IdentityListener implements Listener {
         ItemStack head = new ItemStack(Material.PLAYER_HEAD);
         SkullMeta meta = (SkullMeta) head.getItemMeta();
         
-        // Assigner le propriétaire de la tête
+        // Attribuer la tête au joueur mort
         meta.setOwningPlayer(victim);
         head.setItemMeta(meta);
         
-        // Ajouter la tête au loot de la mort
+        // Ajouter la tête au sol
         event.getDrops().add(head);
     }
 }
